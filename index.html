@@ -1,22 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><title>FudgeGoggle</title></head>
+<head>
+    <title>FudgeGoggle</title>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💩</text></svg>">
+</head>
 <body>
+<h1>FudgeGoggle</h1>
+
 <video autoplay/>
-<script>
 
-function onCameraLoad(stream) {
-    var video = document.querySelector("video");
-    video.srcObject = stream;
-}
+<script type="module">
+import init, {add} from './pkg/fudgegoggle.js';
+await init();
 
-if (navigator.mediaDevices.getUserMedia) {
-    navigator.mediaDevices.getUserMedia({video: true})
-        .then(onCameraLoad)
-        .catch(function () {
-            console.log("TODO: Do something about it");
-        });
-}
+navigator.mediaDevices.getUserMedia({video: true})
+    .then(function(stream) {
+        var video = document.querySelector("video");
+        video.srcObject = stream;
+        video.ontimeupdate = function() {
+            const result = add(video.currentTime,1);
+            console.log(`wasm::add(currentTime,1) = ${result}`);
+        };
+    })
+    .catch(function () {
+        console.log("TODO: Do something about it");
+    });
 </script>
 </body>
 </html>
