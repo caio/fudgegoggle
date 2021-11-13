@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>FudgeGoggle</title></head>
+<body>
+<video autoplay/>
+<script>
+
+function onCameraLoad(stream) {
+    var video = document.querySelector("video");
+    video.srcObject = stream;
+}
+
+if (navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({video: true})
+        .then(onCameraLoad)
+        .catch(function () {
+            console.log("TODO: Do something about it");
+        });
+}
+</script>
+</body>
+</html>
