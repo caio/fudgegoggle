@@ -8,24 +8,37 @@
 <body>
 <h1>FudgeGoggle</h1>
 
-<video autoplay/>
+<video autoplay></video>
+<canvas hidden></canvas>
 
 <script type="module">
-import init, {add} from './pkg/fudgegoggle.js';
+import init, {muh_len} from './pkg/fudgegoggle.js';
 await init();
 
+function decode() {
+    var video = document.querySelector("video");
+    var width = video.videoWidth;
+    var height = video.videoHeight;
+
+    // Can I avoid this dance somehow?
+    var context = document.querySelector("canvas").getContext("2d");
+    context.drawImage(video, width, height);
+    let imageData = context.getImageData(0, 0, width, height);
+
+    let counted = muh_len(imageData.data);
+    console.log(`wasm::muh_len(canvas) = ${counted}`);
+}
+
+var decodeIntervalId;
+
 navigator.mediaDevices.getUserMedia({video: true})
-    .then(function(stream) {
-        var video = document.querySelector("video");
-        video.srcObject = stream;
-        video.ontimeupdate = function() {
-            const result = add(video.currentTime,1);
-            console.log(`wasm::add(currentTime,1) = ${result}`);
-        };
+    .then(stream => {
+        document.querySelector("video").srcObject = stream;
+        decodeIntervalId = setInterval(decode, 300);
     })
-    .catch(function () {
-        console.log("TODO: Do something about it");
-    });
+    .catch(console.error);
+
+
 </script>
 </body>
 </html>
