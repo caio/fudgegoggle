@@ -36,7 +36,11 @@ function decode() {
     try {
         const decoded = qr_decode(width, height, data);
         console.log(`Done! Decoded: ${decoded}`);
+
+        // Stop the video stream and the attempts to decode it
         clearInterval(decodeIntervalId);
+        video.srcObject.getTracks().forEach(track => track.stop());
+        video.hidden = true;
     } catch (err) {
         console.error(err);
     }
