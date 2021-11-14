@@ -12,7 +12,7 @@
 <canvas hidden></canvas>
 
 <script type="module">
-import init, {qr_decode} from './pkg/fudgegoggle.js';
+import init, {qr_decode, decode_otpauth} from './pkg/fudgegoggle.js';
 await init();
 
 var decodeIntervalId;
@@ -35,7 +35,10 @@ function decode() {
 
     try {
         const decoded = qr_decode(width, height, data);
-        console.log(`Done! Decoded: ${decoded}`);
+        console.log(`qr-code decoded: ${decoded}`);
+
+        let res = decode_otpauth(decoded);
+        console.log(`otpauth decoded: ${res}`);
 
         // Stop the video stream and the attempts to decode it
         clearInterval(decodeIntervalId);
