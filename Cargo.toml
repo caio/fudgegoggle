@@ -8,3 +8,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 wasm-bindgen = "0.2"
+rqrr = "0.4"
+
+[dev-dependencies]
+image = "0.23"

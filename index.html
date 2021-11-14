@@ -12,29 +12,40 @@
 <canvas hidden></canvas>
 
 <script type="module">
-import init, {muh_len} from './pkg/fudgegoggle.js';
+import init, {qr_decode} from './pkg/fudgegoggle.js';
 await init();
 
-function decode() {
-    var video = document.querySelector("video");
-    var width = video.videoWidth;
-    var height = video.videoHeight;
-
-    // Can I avoid this dance somehow?
-    var context = document.querySelector("canvas").getContext("2d");
-    context.drawImage(video, width, height);
-    let imageData = context.getImageData(0, 0, width, height);
-
-    let counted = muh_len(imageData.data);
-    console.log(`wasm::muh_len(canvas) = ${counted}`);
-}
-
 var decodeIntervalId;
+
+function decode() {
+    const video = document.querySelector("video");
+    const width = video.videoWidth;
+    const height = video.videoHeight;
+
+    const canvas = document.querySelector("canvas");
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext("2d");
+    // I was calling `context.drawImage(video, width, height)` instead
+    // ...Took me over 1h to realise it wasn't what I wanted :(
+    context.drawImage(video, 0, 0);
+
+    const data = context.getImageData(0, 0, width, height).data;
+
+    try {
+        const decoded = qr_decode(width, height, data);
+        console.log(`Done! Decoded: ${decoded}`);
+        clearInterval(decodeIntervalId);
+    } catch (err) {
+        console.error(err);
+    }
+}
 
 navigator.mediaDevices.getUserMedia({video: true})
     .then(stream => {
         document.querySelector("video").srcObject = stream;
-        decodeIntervalId = setInterval(decode, 300);
+        decodeIntervalId = setInterval(decode, 1000);
     })
     .catch(console.error);
 
