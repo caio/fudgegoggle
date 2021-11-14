@@ -6,6 +6,8 @@ FUGDE GOGGLE AUTHENTICATOR
    otpauth:// URIs to be imported into software that respects
    their users.
 
+   Live at https://caio.github.io/fudgegoggle/
+
 Usage
 
    Build with: wasm-pack build --target web
