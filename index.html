@@ -8,6 +8,7 @@
 <body>
 <h1>FudgeGoggle</h1>
 
+<pre></pre>
 <video autoplay></video>
 <canvas hidden></canvas>
 
@@ -37,8 +38,10 @@ function decode() {
         const decoded = qr_decode(width, height, data);
         console.log(`qr-code decoded: ${decoded}`);
 
-        let res = decode_otpauth(decoded);
-        console.log(`otpauth decoded: ${res}`);
+        let otp_uris = decode_otpauth(decoded);
+        console.log(`otpauth decoded: ${otp_uris}`);
+
+        document.querySelector("pre").innerText = otp_uris;
 
         // Stop the video stream and the attempts to decode it
         clearInterval(decodeIntervalId);

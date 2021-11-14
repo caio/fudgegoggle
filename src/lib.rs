@@ -48,7 +48,9 @@ pub fn qr_decode(width: u32, height: u32, mut src: &[u8]) -> Result<String, JsVa
 
 #[wasm_bindgen]
 pub fn decode_otpauth(input: String) -> Result<String, JsValue> {
-    nojs_otpauth_decode(input).map_err(|err| err.into())
+    nojs_otpauth_decode(input)
+        .map_err(|err| err.into())
+        .map(|uris| uris.join("\n"))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -70,7 +72,7 @@ impl From<OtpError> for JsValue {
     }
 }
 
-fn nojs_otpauth_decode(input: String) -> Result<String, OtpError> {
+fn nojs_otpauth_decode(input: String) -> Result<Vec<String>, OtpError> {
     let urldecoded = urlencoding::decode(&input).map_err(|_err| OtpError::UrlDecode)?;
 
     let b64_encoded = urldecoded
@@ -78,12 +80,71 @@ fn nojs_otpauth_decode(input: String) -> Result<String, OtpError> {
         .ok_or(OtpError::BadInput)?;
 
     if let Ok(decoded) = base64::decode(b64_encoded.trim()) {
-        let _message =
+        let message =
             MigrationPayload::decode(&decoded[..]).map_err(|_err| OtpError::ProtoDecode)?;
-        Ok("FIXME".into())
+        Ok(migration_to_uris(&message))
     } else {
         Err(OtpError::Base64Decode)
     }
+}
+
+// Tries to dump the payload into something that respects:
+// https://github.com/google/google-authenticator/wiki/Key-Uri-Format
+fn migration_to_uris(payload: &MigrationPayload) -> Vec<String> {
+    let mut uris = Vec::new();
+
+    // XXX This will likely die horribly every time I forget to
+    //     url-encode...
+    for param in payload.otp_parameters.iter() {
+        let mut uri = String::from("otpauth://");
+
+        use authenticator_format::migration_payload::OtpType;
+        match param.r#type() {
+            OtpType::Unspecified => todo!("I think this only exists because protobuf..."),
+            OtpType::Hotp => uri.push_str("hotp/"),
+            OtpType::Totp => uri.push_str("totp/"),
+        }
+
+        uri.push_str(&urlencoding::encode(&param.name));
+        uri.push_str("?secret=");
+        uri.push_str(&secret_as_rfc3548(&param.secret));
+
+        if !param.issuer.is_empty() {
+            uri.push_str("&issuer=");
+            uri.push_str(&urlencoding::encode(&param.issuer));
+        }
+
+        use authenticator_format::migration_payload::Algorithm;
+        match param.algorithm() {
+            Algorithm::Sha1 => uri.push_str("&algorithm=SHA1"),
+            Algorithm::Sha256 => uri.push_str("&algorithm=SHA256"),
+            Algorithm::Sha512 => uri.push_str("&algorithm=SHA512"),
+            Algorithm::Md5 => uri.push_str("&algorithm=MD5"),
+            // Unspecified is ignored
+            Algorithm::Unspecified => {}
+        }
+
+        use authenticator_format::migration_payload::DigitCount;
+        match param.digits() {
+            DigitCount::Six => uri.push_str("&digits=6"),
+            DigitCount::Eight => uri.push_str("&digits=8"),
+            // Unspecified is ignored
+            DigitCount::Unspecified => {}
+        }
+
+        // fudging goggle authenticator ignores "period" and apparently
+        // doesn't export it either?
+        // It's optional tho, so...
+        // There's this left-over `counter` i64
+
+        uris.push(uri);
+    }
+
+    uris
+}
+
+fn secret_as_rfc3548(secret: &[u8]) -> String {
+    base32::encode(base32::Alphabet::RFC4648 { padding: false }, secret)
 }
 
 #[cfg(test)]
@@ -110,6 +171,9 @@ mod tests {
     #[test]
     fn can_decode_otpauth() {
         let input = std::fs::read_to_string("otpauth-sample.txt").unwrap();
-        assert_eq!(Ok("FIXME".to_string()), nojs_otpauth_decode(input));
+        let expected = String::from(
+            "otpauth://totp/pi%40raspberrypi?secret=7KSQL2JTUDIS5EF65KLMRQIIGY&issuer=raspberrypi&algorithm=SHA1&digits=6"
+            );
+        assert_eq!(Ok(vec![expected]), nojs_otpauth_decode(input));
     }
 }
