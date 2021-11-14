@@ -1,0 +1,12 @@
+{
+  "name": "fudgegoggle",
+  "version": "0.1.0",
+  "files": [
+    "fudgegoggle_bg.wasm",
+    "fudgegoggle.js",
+    "fudgegoggle.d.ts"
+  ],
+  "module": "fudgegoggle.js",
+  "types": "fudgegoggle.d.ts",
+  "sideEffects": false
+}
